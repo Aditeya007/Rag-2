@@ -1,0 +1,27 @@
+{
+  "server": {
+    "port": 5000,
+    "environment": "development"
+  },
+  "database": {
+    "connectionTimeout": 10000,
+    "maxPoolSize": 20
+  },
+  "jwt": {
+    "expiresIn": "1d",
+    "algorithm": "HS256"
+  },
+  "security": {
+    "bcryptSaltRounds": 10,
+    "maxLoginAttempts": 5,
+    "lockoutDuration": 900000
+  },
+  "bot": {
+    "timeout": 30000,
+    "maxRetries": 3
+  },
+  "cors": {
+    "credentials": true,
+    "maxAge": 86400
+  }
+}

@@ -1,0 +1,88 @@
+/* This file styles the WIDGET CONTAINER, not the chat itself.
+  Every rule is prefixed with #rag-widget-root to create the "force field" 
+  and prevent conflicts with the host website's styles.
+*/
+#rag-widget-root {
+  /* It's good practice to set a base font for the widget. */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Launcher Button Styling */
+#rag-widget-root .chatbot-launcher-button {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #FF8307;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(255, 131, 7, 0.4);
+  z-index: 99999; /* High z-index to stay on top */
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#rag-widget-root .chatbot-launcher-button:hover {
+  background: #e67506;
+  transform: scale(1.1);
+  box-shadow: 0 12px 32px rgba(255, 131, 7, 0.5);
+}
+
+/* Chatbot Window Container Styling */
+#rag-widget-root .chatbot-window-container {
+  position: fixed;
+  bottom: 100px;
+  right: 25px;
+  width: 90vw;
+  max-width: 420px;
+  height: 75vh;
+  max-height: 650px;
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 131, 7, 0.2);
+  z-index: 99998;
+  overflow: hidden; /* Ensures child elements conform to the rounded corners */
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #3a3a3a;
+  
+  /* Animation properties for showing/hiding */
+  transform: translateY(30px) scale(0.9);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom right;
+}
+
+/* This class is added when the widget is open, triggering the animation. */
+#rag-widget-root .chatbot-window-container.open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Responsive adjustments for mobile devices */
+@media (max-width: 500px) {
+  #rag-widget-root .chatbot-window-container {
+    width: calc(100vw - 20px);
+    height: calc(100% - 85px);
+    max-height: none;
+    bottom: 75px;
+    right: 10px;
+    left: 10px;
+  }
+  
+  #rag-widget-root .chatbot-launcher-button {
+      bottom: 15px;
+      right: 15px;
+  }
+}
