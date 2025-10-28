@@ -1395,8 +1395,9 @@ async def _handle_chat_request(request: QuestionRequest) -> AnswerResponse:
     )
     try:
         answer = chatbot_instance.chat(query_text, session_identifier)
-        sources = chatbot_instance.get_recent_sources(session_identifier)
 
+        # Intentionally do not return source snippets in the API response.
+        # The assistant should only return the main answer block.
         metadata = {}
         if request.resource_id:
             metadata["resource_id"] = request.resource_id
@@ -1406,7 +1407,6 @@ async def _handle_chat_request(request: QuestionRequest) -> AnswerResponse:
         return AnswerResponse(
             answer=answer,
             session_id=session_identifier,
-            sources=sources or None,
             metadata=metadata or None
         )
     except Exception as e:
