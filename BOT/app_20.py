@@ -198,19 +198,6 @@ async def require_service_secret(request: Request):
 
     if not hmac.compare_digest(provided_secret.strip(), FASTAPI_SHARED_SECRET.strip()):
         raise HTTPException(status_code=401, detail="Invalid service authentication")
-    """Ensure inter-service calls provide the configured shared secret."""
-    if not ENFORCE_SERVICE_SECRET:
-        return
-
-    if not FASTAPI_SHARED_SECRET:
-        return
-
-    provided_secret = request.headers.get("x-service-secret")
-    if not provided_secret:
-        raise HTTPException(status_code=401, detail="Missing service authentication")
-
-    if not hmac.compare_digest(provided_secret.strip(), FASTAPI_SHARED_SECRET.strip()):
-        raise HTTPException(status_code=401, detail="Invalid service authentication")
 
 # Pydantic models for API request/response
 class QuestionRequest(BaseModel):
@@ -340,93 +327,6 @@ class SemanticIntelligentRAG:
             self.mongo_uri = None
             self.mongo_database_name = None
             print("ℹ️ pymongo not installed; lead storage features are disabled")
-
-
-class TenantChatbotManager:
-    def __init__(self, collection_name: str = "scraped_content"):
-        self.collection_name = collection_name
-        self._instances: Dict[str, SemanticIntelligentRAG] = {}
-        self._lock = asyncio.Lock()
-
-    @staticmethod
-    def _prepare_vector_store_path(vector_store_path: str) -> str:
-        resolved = os.path.abspath(vector_store_path)
-        os.makedirs(resolved, exist_ok=True)
-        return resolved
-
-    async def get_chatbot(
-        self,
-        *,
-        vector_store_path: Optional[str],
-        database_uri: Optional[str],
-        resource_id: Optional[str]
-    ) -> SemanticIntelligentRAG:
-        if not vector_store_path:
-            raise ValueError("vector_store_path is required for tenant isolation")
-
-        resolved_path = self._prepare_vector_store_path(vector_store_path)
-        resolved_db_uri = database_uri or os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-        cache_key = f"{resolved_path}::{resolved_db_uri}"
-
-        instance = self._instances.get(cache_key)
-        if instance:
-            return instance
-
-        async with self._lock:
-            instance = self._instances.get(cache_key)
-            if instance:
-                return instance
-
-            bot_instance = SemanticIntelligentRAG(
-                chroma_db_path=resolved_path,
-                collection_name=self.collection_name,
-                mongo_uri=resolved_db_uri,
-                resource_id=resource_id
-            )
-            print(f"🆕 Initialized chatbot instance for {resource_id or resolved_path}")
-            self._instances[cache_key] = bot_instance
-            return bot_instance
-
-    async def close_all(self):
-        async with self._lock:
-            for instance in self._instances.values():
-                if instance.mongo_client:
-                    instance.close_mongodb_connection()
-            self._instances.clear()
-
-
-async def get_tenant_chatbot_or_error(
-    *,
-    vector_store_path: Optional[str],
-    database_uri: Optional[str],
-    resource_id: Optional[str],
-    user_id: Optional[str] = None
-) -> SemanticIntelligentRAG:
-    global chatbot_manager
-
-    if chatbot_manager is None:
-        raise HTTPException(status_code=503, detail="Chat manager not initialized")
-
-    resolved_vector_path = vector_store_path or os.getenv("DEFAULT_VECTOR_BASE_PATH")
-    if not resolved_vector_path:
-        raise HTTPException(status_code=400, detail="vector_store_path is required")
-
-    resolved_database_uri = database_uri or os.getenv("MONGODB_URI")
-    if not resolved_database_uri:
-        raise HTTPException(status_code=400, detail="database_uri is required")
-
-    tenant_identifier = resource_id or user_id
-
-    try:
-        return await chatbot_manager.get_chatbot(
-            vector_store_path=resolved_vector_path,
-            database_uri=resolved_database_uri,
-            resource_id=tenant_identifier
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to load tenant chatbot: {exc}") from exc
     def start_name_collection(self, session_id: str):
         """Start the name collection process for new sessions"""
         self.name_collection_states[session_id] = {
