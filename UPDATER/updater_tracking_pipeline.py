@@ -49,21 +49,30 @@ class MongoDBTrackingPipeline:
         Tries to use spider's existing connection first, otherwise creates new one.
         """
         try:
+            collection_name = getattr(
+                spider,
+                'url_tracking_collection_name',
+                MONGO_COLLECTION_URL_TRACKING
+            )
+
             # Try to use spider's existing MongoDB connection if available
             if hasattr(spider, 'url_tracking') and spider.url_tracking is not None:
                 self.url_tracking = spider.url_tracking
-                logger.info("✅ MongoDBTrackingPipeline: Using spider's url_tracking collection")
+                logger.info(
+                    "✅ MongoDBTrackingPipeline: Using spider's url_tracking collection (%s)",
+                    collection_name
+                )
             else:
                 # Create our own MongoDB connection
                 self.mongo_client = MongoClient(MONGO_URI)
                 self.db = self.mongo_client[MONGO_DATABASE]
-                self.url_tracking = self.db[MONGO_COLLECTION_URL_TRACKING]
+                self.url_tracking = self.db[collection_name]
                 
                 # Ensure index on url field
                 self.url_tracking.create_index("url", unique=True)
                 logger.info(f"✅ MongoDBTrackingPipeline: Connected to MongoDB at {MONGO_URI}")
                 logger.info(f"   Database: {MONGO_DATABASE}")
-                logger.info(f"   Collection: {MONGO_COLLECTION_URL_TRACKING}")
+                logger.info(f"   Collection: {collection_name}")
                 
         except Exception as e:
             logger.error(f"❌ MongoDBTrackingPipeline: Failed to connect to MongoDB: {e}")

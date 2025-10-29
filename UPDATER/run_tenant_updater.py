@@ -22,7 +22,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-from UPDATER.updater import run_updater  # noqa: E402
+from UPDATER.updater import run_updater, build_url_tracking_collection  # noqa: E402
 
 
 def _ensure_nltk_models() -> None:
@@ -151,6 +151,7 @@ def main(argv: list[str]) -> int:
         "domain": args.domain,
         "vector_store_path": args.vector_store_path,
         "collection_name": args.collection_name,
+        "url_tracking_collection": build_url_tracking_collection(args.resource_id, args.user_id),
         "stats": stats or {},
         "timestamp": datetime.utcnow().isoformat()
     }

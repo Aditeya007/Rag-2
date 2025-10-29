@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import scrapy
 import hashlib
 import logging
+import re
 from datetime import datetime
 from pymongo import MongoClient
 from urllib.parse import urlparse
@@ -45,6 +46,20 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
+def build_url_tracking_collection(resource_id, tenant_user_id):
+    """Return a tenant-specific MongoDB collection name for URL tracking."""
+    base_identifier = (resource_id or tenant_user_id or "").strip()
+    if not base_identifier:
+        return MONGO_COLLECTION_URL_TRACKING
+
+    # Limit characters to be Mongo-friendly and cap length to avoid exceeding 120 bytes.
+    safe_identifier = re.sub(r"[^a-zA-Z0-9._-]", "_", base_identifier)[:80]
+    if not safe_identifier:
+        safe_identifier = "tenant"
+
+    return f"{MONGO_COLLECTION_URL_TRACKING}_{safe_identifier}"
+
 # Import the exact spider and items you're already using
 try:
     from Scraping2.spiders.spider import FixedUniversalSpider
@@ -67,7 +82,8 @@ class ContentChangeDetectorSpider(FixedUniversalSpider):
         self,
         domain: str,
         start_url: str,
-        mongo_uri=None,
+    mongo_uri=None,
+    url_tracking_collection=None,
         resource_id=None,
         tenant_user_id=None,
         vector_store_path=None,
@@ -118,24 +134,30 @@ class ContentChangeDetectorSpider(FixedUniversalSpider):
             scrape_job_id=scrape_job_id,
         )
 
+        # Determine the tenant-scoped MongoDB collection name for URL tracking
+        self.url_tracking_collection_name = (
+            url_tracking_collection
+            or build_url_tracking_collection(resource_id, tenant_user_id)
+        )
+
         # MongoDB connection for URL tracking
         self.mongo_uri = mongo_uri or MONGO_URI
         try:
             self.mongo_client = MongoClient(self.mongo_uri)
             self.db = self.mongo_client[MONGO_DATABASE]
-            self.url_tracking = self.db[MONGO_COLLECTION_URL_TRACKING]
+            self.url_tracking = self.db[self.url_tracking_collection_name]
             self.url_tracking.create_index("url", unique=True)
             
             # Test connection
             self.mongo_client.admin.command('ping')
             logger.info(f"✅ MongoDB connected successfully: {self.mongo_uri}")
             logger.info(f"✅ Database: {MONGO_DATABASE}")
-            logger.info(f"✅ Collection: {MONGO_COLLECTION_URL_TRACKING}")
+            logger.info(f"✅ Collection: {self.url_tracking_collection_name}")
         except Exception as e:
             logger.error(f"❌ MongoDB connection FAILED: {e}")
             logger.error(f"   URI: {self.mongo_uri}")
             logger.error(f"   Database: {MONGO_DATABASE}")
-            logger.error(f"   Collection: {MONGO_COLLECTION_URL_TRACKING}")
+            logger.error(f"   Collection: {self.url_tracking_collection_name}")
             raise
 
         # Track which URLs should be processed (NEW or MODIFIED)
@@ -155,7 +177,7 @@ class ContentChangeDetectorSpider(FixedUniversalSpider):
         logger.info(f"{'='*80}")
         logger.info(f"📊 MongoDB: {self.mongo_uri}")
         logger.info(f"📂 Database: {MONGO_DATABASE}")
-        logger.info(f"📋 Collection: {MONGO_COLLECTION_URL_TRACKING}")
+        logger.info(f"📋 Collection: {self.url_tracking_collection_name}")
         logger.info(f"🎯 Target: {start_url}")
         if self.resource_id:
             logger.info(f"🧾 Resource ID: {self.resource_id}")
@@ -421,9 +443,12 @@ def run_updater(
     logger.info(f"\n{'='*80}")
     logger.info(f"🚀 Starting Updater")
     logger.info(f"{'='*80}")
+    tenant_collection = build_url_tracking_collection(resource_id, tenant_user_id)
+
     logger.info(f"Domain: {domain}")
     logger.info(f"Start URL: {start_url}")
     logger.info(f"MongoDB: {mongo_uri or MONGO_URI}")
+    logger.info(f"URL Tracking Collection: {tenant_collection}")
     if resource_id:
         logger.info(f"Resource ID: {resource_id}")
     if tenant_user_id:
@@ -451,6 +476,7 @@ def run_updater(
         domain=domain,
         start_url=start_url,
         mongo_uri=mongo_uri,
+        url_tracking_collection=tenant_collection,
         max_depth=max_depth,
         sitemap_url=sitemap_url,
         resource_id=resource_id,
