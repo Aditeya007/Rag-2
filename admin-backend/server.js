@@ -11,6 +11,7 @@ const dbConnect = require('./utils/db');   // Your MongoDB connection utility
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const usersRoutes = require('./routes/users');
 const botRoutes = require('./routes/bot');
 const scrapeRoutes = require('./routes/scrape');
 
@@ -123,7 +124,8 @@ dbConnect();
 
 // API Routes
 app.use('/api/auth', authRoutes);          // Register, login
-app.use('/api/user', userRoutes);          // User info, CRUD
+app.use('/api/user', userRoutes);          // Current user info
+app.use('/api/users', usersRoutes);        // Authenticated user management
 app.use('/api/bot', botRoutes);            // Bot interaction endpoints
 app.use('/api/scrape', scrapeRoutes);      // Scraper + updater triggers
 
@@ -147,6 +149,10 @@ app.get('/', (req, res) => {
       'POST /api/auth/login',
       'GET /api/user/me',
       'PUT /api/user/me',
+  'GET /api/users',
+  'POST /api/users',
+  'PUT /api/users/:id',
+  'DELETE /api/users/:id',
       'POST /api/bot/run',
       'POST /api/scrape/run',
       'POST /api/scrape/update',

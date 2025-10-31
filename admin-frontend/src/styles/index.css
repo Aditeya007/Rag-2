@@ -282,6 +282,10 @@ label {
   flex-wrap: wrap;
 }
 
+.dashboard-actions--secondary {
+  margin-top: 1.8em;
+}
+
 .dashboard-action-btn {
   flex: 1;
   min-width: 200px;
@@ -295,6 +299,37 @@ label {
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(255, 131, 7, 0.25);
+}
+
+.dashboard-alert {
+  margin-top: 1.5em;
+  padding: 1em 1.2em;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.dashboard-alert--success {
+  background: rgba(82, 196, 104, 0.12);
+  border-color: rgba(82, 196, 104, 0.32);
+  color: #8de0a0;
+}
+
+.dashboard-alert--error {
+  background: rgba(255, 74, 85, 0.12);
+  border-color: rgba(255, 74, 85, 0.32);
+  color: #ff8a92;
+}
+
+.dashboard-empty {
+  margin-top: 2em;
+  background: rgba(24, 31, 42, 0.85);
+  border-radius: 18px;
+  padding: 2.4em 2em;
+  text-align: center;
+  color: #b5bdc9;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 .dashboard-action-btn:hover {

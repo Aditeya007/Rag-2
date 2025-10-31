@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import BotPage from './pages/BotPage';
 import HealthPage from './pages/HealthPage';
 
@@ -28,6 +29,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
               </ProtectedRoute>
             }
           />

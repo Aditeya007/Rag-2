@@ -70,7 +70,8 @@ exports.startScrape = async (req, res) => {
   const maxLinksPerPage = parseIntegerOrUndefined(req.body.maxLinksPerPage);
 
   try {
-    const tenantContext = await getUserTenantContext(req.user.userId);
+  const userId = req.tenantUserId || req.user.userId;
+  const tenantContext = await getUserTenantContext(userId);
     ensureTenantResources(tenantContext);
 
     const jobId = buildJobId('scrape', tenantContext.resourceId);
@@ -103,7 +104,7 @@ exports.startScrape = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Scrape job failed:', {
-      userId: req.user.userId,
+  userId: req.tenantUserId || req.user.userId,
       error: err.message,
       code: err.code,
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
@@ -137,7 +138,8 @@ exports.runUpdater = async (req, res) => {
   const maxLinksPerPage = parseIntegerOrUndefined(req.body.maxLinksPerPage);
 
   try {
-    const tenantContext = await getUserTenantContext(req.user.userId);
+  const userId = req.tenantUserId || req.user.userId;
+  const tenantContext = await getUserTenantContext(userId);
     ensureTenantResources(tenantContext);
 
     const jobId = buildJobId('update', tenantContext.resourceId);
@@ -171,7 +173,7 @@ exports.runUpdater = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Updater job failed:', {
-      userId: req.user.userId,
+  userId: req.tenantUserId || req.user.userId,
       error: err.message,
       code: err.code,
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined

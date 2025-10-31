@@ -12,7 +12,7 @@ const { getUserTenantContext } = require('../services/userContextService');
  */
 exports.runBot = async (req, res) => {
   // Get user info from JWT (set by auth middleware)
-  const userId = req.user.userId;
+  const userId = req.tenantUserId || req.user.userId;
   const username = req.user.username;
   const { input, sessionId: clientSessionId } = req.body;
   
@@ -56,14 +56,14 @@ exports.runBot = async (req, res) => {
       { sessionId: normalizedSessionId }
     );
     
-  // FastAPI returns answer, session identifier, and optional metadata
-  console.log(`✅ Bot response received for user: ${username}`);
+    // FastAPI returns answer, session identifier, and optional metadata
+    console.log(`✅ Bot response received for user: ${username}`);
     
     // Return comprehensive response matching frontend expectations
     res.json({
       success: true,
       answer: botResult.answer,
-    session_id: botResult.session_id || `user_${userId}_${Date.now()}`,
+      session_id: botResult.session_id || `user_${userId}_${Date.now()}`,
       user_id: userId,
       resource_id: tenantContext.resourceId,
       timestamp: new Date().toISOString(),

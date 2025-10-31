@@ -9,7 +9,7 @@ import '../styles/index.css';
 
 function BotPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, activeTenant } = useAuth();
   const { execute, loading } = useApi();
 
   const [messages, setMessages] = useState([]);
@@ -19,13 +19,19 @@ function BotPage() {
   const messagesEndRef = useRef(null);
 
   const displayName = useMemo(() => user?.name || user?.username || 'there', [user]);
+  const activeTenantId = useMemo(() => {
+    if (!activeTenant) {
+      return null;
+    }
+    return activeTenant.id || activeTenant._id || null;
+  }, [activeTenant]);
 
   useEffect(() => {
     setMessages([
       {
         id: `welcome_${Date.now()}`,
         sender: 'bot',
-        text: `Hi ${displayName}! Ask me anything about your tenant's knowledge base and I'll pull the best answers.`,
+        text: `Hi ! I'm an AI assistant. How can I help you today?`,
       },
     ]);
     setSessionId(`tenant_session_${Date.now()}`);
@@ -49,13 +55,18 @@ function BotPage() {
       return;
     }
 
+    if (!activeTenantId) {
+      setInlineError('Create or select a user before interacting with the bot.');
+      return;
+    }
+
     setInlineError('');
     appendMessage({ sender: 'user', text: trimmed });
     setInput('');
 
     const result = await execute('/bot/run', {
       method: 'POST',
-      data: { input: trimmed, sessionId },
+      data: { input: trimmed, sessionId, tenantUserId: activeTenantId },
     });
 
     if (result.success && result.data?.answer) {
@@ -75,7 +86,7 @@ function BotPage() {
       setInlineError(errorMessage);
       appendMessage({ sender: 'bot', text: errorMessage, isError: true });
     }
-  }, [appendMessage, execute, input, loading, sessionId]);
+  }, [activeTenantId, appendMessage, execute, input, loading, sessionId]);
 
   const handleReset = useCallback(() => {
     setMessages([
@@ -91,10 +102,18 @@ function BotPage() {
 
   return (
     <div className="bot-container">
+      {!activeTenantId && (
+        <div className="bot-error-banner">
+          <strong>No tenant selected</strong>
+          <span>
+            Create a user on the dashboard and set it as active before using the bot.
+          </span>
+        </div>
+      )}
       <header className="bot-header">
-        <h2 className="bot-heading">🤖 Tenant RAG Assistant</h2>
+        <h2 className="bot-heading">🤖AI Assistant</h2>
         <div className="bot-header-actions">
-          <button className="bot-clear-btn" onClick={handleReset} disabled={loading}>
+    <button className="bot-clear-btn" onClick={handleReset} disabled={loading}>
             Reset Session
           </button>
           <button className="bot-back-btn" onClick={() => navigate('/dashboard')}>
@@ -146,9 +165,13 @@ function BotPage() {
           placeholder="Ask a question about your data..."
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          disabled={loading}
+          disabled={loading || !activeTenantId}
         />
-        <button className="bot-send-btn" type="submit" disabled={loading || !input.trim()}>
+        <button
+          className="bot-send-btn"
+          type="submit"
+          disabled={loading || !input.trim() || !activeTenantId}
+        >
           {loading ? 'Sending…' : 'Send'}
         </button>
       </form>

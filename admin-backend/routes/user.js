@@ -22,6 +22,4 @@ router.get('/me', auth, userLimiter, userController.getMe);
  */
 router.put('/me', auth, userLimiter, validateProfileUpdate, userController.updateMe);
 
-// (Optionally, add more later: delete account, view other stats, etc.)
-
 module.exports = router;

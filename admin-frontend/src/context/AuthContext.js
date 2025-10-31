@@ -1,6 +1,6 @@
 // src/context/AuthContext.js
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { API_BASE_URL } from '../config';
 
 const AuthContext = createContext();
@@ -9,6 +9,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('jwt') || '');
   const [loading, setLoading] = useState(true); // Add loading state
+  const [activeTenant, setActiveTenantState] = useState(() => {
+    const stored = localStorage.getItem('activeTenant');
+    if (!stored) {
+      return null;
+    }
+    try {
+      return JSON.parse(stored);
+    } catch (error) {
+      console.warn('Failed to parse stored tenant:', error);
+      localStorage.removeItem('activeTenant');
+      return null;
+    }
+  });
 
   // On mount: fetch user if token exists
   useEffect(() => {
@@ -30,6 +43,8 @@ export function AuthProvider({ children }) {
           setUser(null);
           setToken('');
           localStorage.removeItem('jwt');
+          setActiveTenantState(null);
+          localStorage.removeItem('activeTenant');
         }
       } catch (error) {
         console.error('Failed to fetch user:', error);
@@ -56,6 +71,8 @@ export function AuthProvider({ children }) {
         setToken(data.token);
         localStorage.setItem('jwt', data.token);
         setUser(data.user || null);
+        setActiveTenantState(null);
+        localStorage.removeItem('activeTenant');
         return { success: true };
       } else {
         setUser(null);
@@ -84,6 +101,8 @@ export function AuthProvider({ children }) {
         setToken(data.token);
         localStorage.setItem('jwt', data.token);
         setUser(data.user || null);
+        setActiveTenantState(null);
+        localStorage.removeItem('activeTenant');
         return { success: true };
       } else {
         setUser(null);
@@ -101,10 +120,33 @@ export function AuthProvider({ children }) {
     setUser(null);
     setToken('');
     localStorage.removeItem('jwt');
+    setActiveTenantState(null);
+    localStorage.removeItem('activeTenant');
   }
 
+  const setActiveTenant = useCallback((tenant) => {
+    if (tenant) {
+      setActiveTenantState(tenant);
+      localStorage.setItem('activeTenant', JSON.stringify(tenant));
+    } else {
+      setActiveTenantState(null);
+      localStorage.removeItem('activeTenant');
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        register,
+        logout,
+        activeTenant,
+        setActiveTenant
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
