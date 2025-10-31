@@ -29,14 +29,15 @@ function resolveTenant(req, res, next) {
   const requestedOverride = headerOverride || queryOverride || bodyOverride;
 
   if (requestedOverride) {
-    if (req.user.role !== 'admin') {
+    tenantUserId = String(requestedOverride).trim();
+
+    if (tenantUserId !== fallbackUserId && req.user.role !== 'admin') {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'Only administrators can manage other tenant resources.'
       });
     }
 
-    tenantUserId = String(requestedOverride).trim();
     impersonating = tenantUserId !== fallbackUserId;
   }
 
