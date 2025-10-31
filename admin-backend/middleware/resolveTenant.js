@@ -18,7 +18,7 @@ function resolveTenant(req, res, next) {
     });
   }
 
-  const fallbackUserId = req.user.userId;
+  const fallbackUserId = String(req.user.userId || '').trim();
   let tenantUserId = fallbackUserId;
   let impersonating = false;
 
@@ -29,13 +29,14 @@ function resolveTenant(req, res, next) {
   const requestedOverride = headerOverride || queryOverride || bodyOverride;
 
   if (requestedOverride) {
-    tenantUserId = String(requestedOverride).trim();
+    const normalizedOverride = String(requestedOverride || '').trim();
 
-    if (tenantUserId !== fallbackUserId && req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Only administrators can manage other tenant resources.'
-      });
+    if (normalizedOverride && normalizedOverride === fallbackUserId) {
+      tenantUserId = normalizedOverride;
+    } else if (req.user.role === 'admin') {
+      tenantUserId = normalizedOverride || fallbackUserId;
+    } else {
+      tenantUserId = fallbackUserId;
     }
 
     impersonating = tenantUserId !== fallbackUserId;
